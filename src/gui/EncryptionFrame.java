@@ -1,9 +1,12 @@
 package gui;
 
 
+import crypto.CryptoUtils;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+
 
 
 /*
@@ -14,8 +17,8 @@ import java.awt.*;
  * - Creating application window
  * - Designing GUI components
  * - Handling user interaction
+ * - Connecting GUI with CryptoUtils
  *
- * Encryption logic will be added later.
  */
 
 
@@ -61,29 +64,29 @@ public class EncryptionFrame extends JFrame {
 
 
         setTitle(
-            "Encryption Decryption Tool"
+                "Encryption Decryption Tool"
         );
 
 
         setSize(
-            900,
-            600
+                900,
+                600
         );
 
 
         setDefaultCloseOperation(
-            JFrame.EXIT_ON_CLOSE
+                JFrame.EXIT_ON_CLOSE
         );
 
 
         setLocationRelativeTo(null);
 
 
-
         createGUI();
 
-
     }
+
+
 
 
 
@@ -97,7 +100,10 @@ public class EncryptionFrame extends JFrame {
 
         JPanel mainPanel =
                 new JPanel(
-                    new BorderLayout(10,10)
+                        new BorderLayout(
+                                10,
+                                10
+                        )
                 );
 
 
@@ -112,7 +118,7 @@ public class EncryptionFrame extends JFrame {
 
 
 
-        // TOP PASSWORD PANEL
+        // Password Panel
 
         JPanel passwordPanel =
                 new JPanel(
@@ -148,7 +154,8 @@ public class EncryptionFrame extends JFrame {
 
 
 
-        // CENTER TEXT AREA PANEL
+
+        // Text Areas
 
 
         JPanel textPanel =
@@ -173,6 +180,7 @@ public class EncryptionFrame extends JFrame {
 
 
 
+
         outputArea =
                 new JTextArea();
 
@@ -180,6 +188,7 @@ public class EncryptionFrame extends JFrame {
         outputArea.setLineWrap(true);
 
         outputArea.setWrapStyleWord(true);
+
 
 
 
@@ -203,6 +212,7 @@ public class EncryptionFrame extends JFrame {
         );
 
 
+
         outputScroll.setBorder(
                 BorderFactory.createTitledBorder(
                         "Output Text"
@@ -211,14 +221,9 @@ public class EncryptionFrame extends JFrame {
 
 
 
-        textPanel.add(
-                inputScroll
-        );
+        textPanel.add(inputScroll);
 
-
-        textPanel.add(
-                outputScroll
-        );
+        textPanel.add(outputScroll);
 
 
 
@@ -230,7 +235,8 @@ public class EncryptionFrame extends JFrame {
 
 
 
-        // BUTTON PANEL
+
+        // Buttons
 
 
         JPanel buttonPanel =
@@ -244,16 +250,19 @@ public class EncryptionFrame extends JFrame {
                 );
 
 
+
         decryptButton =
                 new JButton(
                         "Decrypt Text"
                 );
 
 
+
         copyButton =
                 new JButton(
                         "Copy Output"
                 );
+
 
 
         clearButton =
@@ -269,6 +278,7 @@ public class EncryptionFrame extends JFrame {
                 );
 
 
+
         decryptFileButton =
                 new JButton(
                         "Decrypt File"
@@ -276,35 +286,18 @@ public class EncryptionFrame extends JFrame {
 
 
 
-        buttonPanel.add(
-                encryptButton
-        );
 
+        buttonPanel.add(encryptButton);
 
-        buttonPanel.add(
-                decryptButton
-        );
+        buttonPanel.add(decryptButton);
 
+        buttonPanel.add(copyButton);
 
-        buttonPanel.add(
-                copyButton
-        );
+        buttonPanel.add(clearButton);
 
+        buttonPanel.add(encryptFileButton);
 
-        buttonPanel.add(
-                clearButton
-        );
-
-
-        buttonPanel.add(
-                encryptFileButton
-        );
-
-
-        buttonPanel.add(
-                decryptFileButton
-        );
-
+        buttonPanel.add(decryptFileButton);
 
 
 
@@ -316,13 +309,16 @@ public class EncryptionFrame extends JFrame {
 
 
 
-        // STATUS BAR
+
+
+        // Status Bar
 
 
         statusLabel =
                 new JLabel(
                         "Ready"
                 );
+
 
 
         JPanel statusPanel =
@@ -339,6 +335,7 @@ public class EncryptionFrame extends JFrame {
                         5
                 )
         );
+
 
 
         statusPanel.add(
@@ -363,8 +360,8 @@ public class EncryptionFrame extends JFrame {
 
         addButtonActions();
 
-
     }
+
 
 
 
@@ -378,20 +375,15 @@ public class EncryptionFrame extends JFrame {
     private void addButtonActions(){
 
 
+
         encryptButton.addActionListener(
-                e ->
-                statusLabel.setText(
-                        "Encrypt button clicked"
-                )
+                e -> encryptText()
         );
 
 
 
         decryptButton.addActionListener(
-                e ->
-                statusLabel.setText(
-                        "Decrypt button clicked"
-                )
+                e -> decryptText()
         );
 
 
@@ -401,7 +393,6 @@ public class EncryptionFrame extends JFrame {
 
 
                     outputArea.selectAll();
-
 
                     outputArea.copy();
 
@@ -415,6 +406,8 @@ public class EncryptionFrame extends JFrame {
 
 
 
+
+
         clearButton.addActionListener(
                 e -> {
 
@@ -423,13 +416,14 @@ public class EncryptionFrame extends JFrame {
 
                     outputArea.setText("");
 
+
                     statusLabel.setText(
                             "Cleared"
                     );
 
-
                 }
         );
+
 
 
 
@@ -442,6 +436,7 @@ public class EncryptionFrame extends JFrame {
 
 
 
+
         decryptFileButton.addActionListener(
                 e ->
                 statusLabel.setText(
@@ -451,6 +446,210 @@ public class EncryptionFrame extends JFrame {
 
     }
 
+
+
+
+
+
+    // ===============================
+    // Encrypt Text
+    // ===============================
+
+
+    private void encryptText(){
+
+
+        try {
+
+
+            String text =
+                    inputArea.getText();
+
+
+
+            char[] password =
+                    passwordField.getPassword();
+
+
+
+
+            if(text.isEmpty()){
+
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Please enter text"
+                );
+
+
+                return;
+
+            }
+
+
+
+
+
+            if(password.length == 0){
+
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Please enter password"
+                );
+
+
+                return;
+
+            }
+
+
+
+
+            String encrypted =
+                    CryptoUtils.encrypt(
+                            text,
+                            password
+                    );
+
+
+
+            outputArea.setText(
+                    encrypted
+            );
+
+
+
+            statusLabel.setText(
+                    "Text encrypted successfully"
+            );
+
+
+        }
+        catch(Exception e){
+
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Encryption failed : "
+                    +
+                    e.getMessage()
+            );
+
+
+            statusLabel.setText(
+                    "Encryption error"
+            );
+
+        }
+
+
+    }
+
+
+
+
+
+
+
+
+    // ===============================
+    // Decrypt Text
+    // ===============================
+
+
+    private void decryptText(){
+
+
+        try {
+
+
+            String encryptedText =
+                    inputArea.getText();
+
+
+
+            char[] password =
+                    passwordField.getPassword();
+
+
+
+
+            if(encryptedText.isEmpty()){
+
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Please enter encrypted text"
+                );
+
+
+                return;
+
+            }
+
+
+
+
+
+            if(password.length == 0){
+
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Please enter password"
+                );
+
+
+                return;
+
+            }
+
+
+
+
+
+            String decrypted =
+                    CryptoUtils.decrypt(
+                            encryptedText,
+                            password
+                    );
+
+
+
+
+            outputArea.setText(
+                    decrypted
+            );
+
+
+
+            statusLabel.setText(
+                    "Text decrypted successfully"
+            );
+
+
+
+        }
+        catch(Exception e){
+
+
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Wrong password or corrupted encrypted data"
+            );
+
+
+            statusLabel.setText(
+                    "Decryption failed"
+            );
+
+
+        }
+
+
+    }
 
 
 

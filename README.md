@@ -12,3 +12,37 @@ The project demonstrates practical implementation of:
 - Exception handling and validation
 
 Built for educational purposes to understand how modern encryption systems protect sensitive information.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Crypto Module Testing
+
+### Successful Encryption and Decryption
+
+![Crypto Success](screenshots/phase3_crypto_success.png)
+
+
+### Wrong Password Detection
+
+![Authentication Failure](screenshots/phase3_wrong_password_test.png)
