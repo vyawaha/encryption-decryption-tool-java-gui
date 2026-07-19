@@ -2,27 +2,34 @@ package gui;
 
 
 import crypto.CryptoUtils;
+import service.FileEncryptionService;
+
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+
 import java.awt.*;
+import java.nio.file.Path;
 
 
 
 /*
  * EncryptionFrame
  *
- * Responsible for:
+ * Responsibilities:
  *
- * - Creating application window
- * - Designing GUI components
- * - Handling user interaction
- * - Connecting GUI with CryptoUtils
+ * - Create application window
+ * - Design Swing GUI
+ * - Handle text encryption/decryption
+ * - Handle file encryption/decryption
+ * - Connect GUI with CryptoUtils
+ * - Connect GUI with FileEncryptionService
  *
  */
 
 
 public class EncryptionFrame extends JFrame {
+
 
 
     // ===============================
@@ -37,6 +44,7 @@ public class EncryptionFrame extends JFrame {
     private JPasswordField passwordField;
 
 
+
     private JButton encryptButton;
 
     private JButton decryptButton;
@@ -46,12 +54,16 @@ public class EncryptionFrame extends JFrame {
     private JButton clearButton;
 
 
+
     private JButton encryptFileButton;
 
     private JButton decryptFileButton;
 
 
+
     private JLabel statusLabel;
+
+
 
 
 
@@ -60,7 +72,7 @@ public class EncryptionFrame extends JFrame {
     // ===============================
 
 
-    public EncryptionFrame() {
+    public EncryptionFrame(){
 
 
         setTitle(
@@ -82,9 +94,12 @@ public class EncryptionFrame extends JFrame {
         setLocationRelativeTo(null);
 
 
+
         createGUI();
 
+
     }
+
 
 
 
@@ -98,6 +113,7 @@ public class EncryptionFrame extends JFrame {
     private void createGUI(){
 
 
+
         JPanel mainPanel =
                 new JPanel(
                         new BorderLayout(
@@ -105,6 +121,7 @@ public class EncryptionFrame extends JFrame {
                                 10
                         )
                 );
+
 
 
         mainPanel.setBorder(
@@ -118,7 +135,12 @@ public class EncryptionFrame extends JFrame {
 
 
 
-        // Password Panel
+
+
+        // ===============================
+        // Password Section
+        // ===============================
+
 
         JPanel passwordPanel =
                 new JPanel(
@@ -128,10 +150,12 @@ public class EncryptionFrame extends JFrame {
                 );
 
 
+
         JLabel passwordLabel =
                 new JLabel(
                         "Password:"
                 );
+
 
 
         passwordField =
@@ -140,9 +164,15 @@ public class EncryptionFrame extends JFrame {
                 );
 
 
-        passwordPanel.add(passwordLabel);
 
-        passwordPanel.add(passwordField);
+        passwordPanel.add(
+                passwordLabel
+        );
+
+
+        passwordPanel.add(
+                passwordField
+        );
 
 
 
@@ -155,7 +185,10 @@ public class EncryptionFrame extends JFrame {
 
 
 
-        // Text Areas
+
+        // ===============================
+        // Text Area Section
+        // ===============================
 
 
         JPanel textPanel =
@@ -170,8 +203,10 @@ public class EncryptionFrame extends JFrame {
 
 
 
+
         inputArea =
                 new JTextArea();
+
 
 
         inputArea.setLineWrap(true);
@@ -181,13 +216,16 @@ public class EncryptionFrame extends JFrame {
 
 
 
+
         outputArea =
                 new JTextArea();
+
 
 
         outputArea.setLineWrap(true);
 
         outputArea.setWrapStyleWord(true);
+
 
 
 
@@ -198,10 +236,12 @@ public class EncryptionFrame extends JFrame {
                 );
 
 
+
         JScrollPane outputScroll =
                 new JScrollPane(
                         outputArea
                 );
+
 
 
 
@@ -221,9 +261,16 @@ public class EncryptionFrame extends JFrame {
 
 
 
-        textPanel.add(inputScroll);
 
-        textPanel.add(outputScroll);
+
+        textPanel.add(
+                inputScroll
+        );
+
+
+        textPanel.add(
+                outputScroll
+        );
 
 
 
@@ -236,11 +283,15 @@ public class EncryptionFrame extends JFrame {
 
 
 
-        // Buttons
+
+        // ===============================
+        // Button Section
+        // ===============================
 
 
         JPanel buttonPanel =
                 new JPanel();
+
 
 
 
@@ -287,17 +338,36 @@ public class EncryptionFrame extends JFrame {
 
 
 
-        buttonPanel.add(encryptButton);
 
-        buttonPanel.add(decryptButton);
+        buttonPanel.add(
+                encryptButton
+        );
 
-        buttonPanel.add(copyButton);
 
-        buttonPanel.add(clearButton);
+        buttonPanel.add(
+                decryptButton
+        );
 
-        buttonPanel.add(encryptFileButton);
 
-        buttonPanel.add(decryptFileButton);
+        buttonPanel.add(
+                copyButton
+        );
+
+
+        buttonPanel.add(
+                clearButton
+        );
+
+
+        buttonPanel.add(
+                encryptFileButton
+        );
+
+
+        buttonPanel.add(
+                decryptFileButton
+        );
+
 
 
 
@@ -311,7 +381,10 @@ public class EncryptionFrame extends JFrame {
 
 
 
+
+        // ===============================
         // Status Bar
+        // ===============================
 
 
         statusLabel =
@@ -325,6 +398,7 @@ public class EncryptionFrame extends JFrame {
                 new JPanel(
                         new BorderLayout()
                 );
+
 
 
         statusPanel.setBorder(
@@ -345,6 +419,8 @@ public class EncryptionFrame extends JFrame {
 
 
 
+
+
         add(
                 mainPanel,
                 BorderLayout.CENTER
@@ -360,13 +436,9 @@ public class EncryptionFrame extends JFrame {
 
         addButtonActions();
 
+
+
     }
-
-
-
-
-
-
     // ===============================
     // Button Events
     // ===============================
@@ -401,6 +473,7 @@ public class EncryptionFrame extends JFrame {
                             "Output copied"
                     );
 
+
                 }
         );
 
@@ -421,28 +494,27 @@ public class EncryptionFrame extends JFrame {
                             "Cleared"
                     );
 
+
                 }
         );
 
 
 
 
-        encryptFileButton.addActionListener(
-                e ->
-                statusLabel.setText(
-                        "File encryption selected"
-                )
-        );
 
+
+        // Phase 5 File Encryption
+
+        encryptFileButton.addActionListener(
+                e -> encryptFile()
+        );
 
 
 
         decryptFileButton.addActionListener(
-                e ->
-                statusLabel.setText(
-                        "File decryption selected"
-                )
+                e -> decryptFile()
         );
+
 
     }
 
@@ -451,15 +523,17 @@ public class EncryptionFrame extends JFrame {
 
 
 
+
     // ===============================
-    // Encrypt Text
+    // Text Encryption
     // ===============================
 
 
     private void encryptText(){
 
 
-        try {
+
+        try{
 
 
             String text =
@@ -514,6 +588,7 @@ public class EncryptionFrame extends JFrame {
 
 
 
+
             outputArea.setText(
                     encrypted
             );
@@ -525,8 +600,10 @@ public class EncryptionFrame extends JFrame {
             );
 
 
+
         }
         catch(Exception e){
+
 
 
             JOptionPane.showMessageDialog(
@@ -537,11 +614,14 @@ public class EncryptionFrame extends JFrame {
             );
 
 
+
             statusLabel.setText(
                     "Encryption error"
             );
 
+
         }
+
 
 
     }
@@ -552,20 +632,21 @@ public class EncryptionFrame extends JFrame {
 
 
 
-
     // ===============================
-    // Decrypt Text
+    // Text Decryption
     // ===============================
 
 
     private void decryptText(){
 
 
-        try {
+
+        try{
 
 
             String encryptedText =
                     inputArea.getText();
+
 
 
 
@@ -609,6 +690,7 @@ public class EncryptionFrame extends JFrame {
 
 
 
+
             String decrypted =
                     CryptoUtils.decrypt(
                             encryptedText,
@@ -641,12 +723,309 @@ public class EncryptionFrame extends JFrame {
             );
 
 
+
             statusLabel.setText(
                     "Decryption failed"
             );
 
 
         }
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+    // ===============================
+    // File Encryption
+    // ===============================
+
+
+    private void encryptFile(){
+
+
+
+        try{
+
+
+
+            JFileChooser chooser =
+                    new JFileChooser();
+
+
+
+
+            int result =
+                    chooser.showOpenDialog(
+                            this
+                    );
+
+
+
+
+            if(result != JFileChooser.APPROVE_OPTION){
+
+
+                return;
+
+
+            }
+
+
+
+
+
+            Path inputFile =
+                    chooser
+                    .getSelectedFile()
+                    .toPath();
+
+
+
+
+
+            Path outputFile =
+                    Path.of(
+                            inputFile.toString()
+                            +
+                            ".enc"
+                    );
+
+
+
+
+
+
+            char[] password =
+                    passwordField.getPassword();
+
+
+
+
+
+            if(password.length == 0){
+
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Please enter password"
+                );
+
+
+                return;
+
+
+            }
+
+
+
+
+
+            FileEncryptionService.encryptFile(
+                    inputFile,
+                    outputFile,
+                    password
+            );
+
+
+
+
+
+            statusLabel.setText(
+                    "File encrypted successfully"
+            );
+
+
+
+
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Encrypted file saved:\n"
+                    +
+                    outputFile
+            );
+
+
+
+
+        }
+        catch(Exception e){
+
+
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "File encryption failed:\n"
+                    +
+                    e.getMessage()
+            );
+
+
+
+            statusLabel.setText(
+                    "File encryption error"
+            );
+
+
+        }
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+    // ===============================
+    // File Decryption
+    // ===============================
+
+
+    private void decryptFile(){
+
+
+
+        try{
+
+
+
+            JFileChooser chooser =
+                    new JFileChooser();
+
+
+
+
+            int result =
+                    chooser.showOpenDialog(
+                            this
+                    );
+
+
+
+
+            if(result != JFileChooser.APPROVE_OPTION){
+
+
+                return;
+
+
+            }
+
+
+
+
+
+            Path inputFile =
+                    chooser
+                    .getSelectedFile()
+                    .toPath();
+
+
+
+
+
+
+            Path outputFile =
+                    Path.of(
+                            inputFile.toString()
+                            +
+                            ".dec"
+                    );
+
+
+
+
+
+
+
+            char[] password =
+                    passwordField.getPassword();
+
+
+
+
+
+            if(password.length == 0){
+
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Please enter password"
+                );
+
+
+                return;
+
+
+            }
+
+
+
+
+
+            FileEncryptionService.decryptFile(
+                    inputFile,
+                    outputFile,
+                    password
+            );
+
+
+
+
+
+
+            statusLabel.setText(
+                    "File decrypted successfully"
+            );
+
+
+
+
+
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Decrypted file saved:\n"
+                    +
+                    outputFile
+            );
+
+
+
+
+        }
+        catch(Exception e){
+
+
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Wrong password or corrupted encrypted file"
+            );
+
+
+
+            statusLabel.setText(
+                    "File decryption failed"
+            );
+
+
+        }
+
+
 
 
     }
