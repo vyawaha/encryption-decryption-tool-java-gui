@@ -4,31 +4,25 @@ package crypto;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
-
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 
+import java.io.ByteArrayOutputStream;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
 
-
+import java.util.Arrays;
 import java.util.Base64;
 
 
 
-
 public class CryptoUtils {
-
-
-
-    /*
-     * Security Parameters
-     */
 
 
     private static final int SALT_LENGTH = 16;
@@ -42,10 +36,7 @@ public class CryptoUtils {
     private static final int TAG_LENGTH = 128;
 
 
-
-    private static final SecureRandom RANDOM =
-            new SecureRandom();
-
+    private static final byte VERSION = 1;
 
 
     private static final byte[] MAGIC =
@@ -57,23 +48,20 @@ public class CryptoUtils {
             };
 
 
-    private static final byte VERSION = 1;
-
-
+    private static final SecureRandom RANDOM =
+            new SecureRandom();
 
 
 
     /*
-     * Generate AES Key From Password
+        Generate AES Key using PBKDF2
      */
-
 
     private static SecretKey generateKey(
             char[] password,
             byte[] salt
     )
-            throws GeneralSecurityException {
-
+            throws Exception {
 
 
         PBEKeySpec spec =
@@ -85,18 +73,15 @@ public class CryptoUtils {
                 );
 
 
-
         SecretKeyFactory factory =
                 SecretKeyFactory.getInstance(
                         "PBKDF2WithHmacSHA256"
                 );
 
 
-
         byte[] keyBytes =
-                factory
-                .generateSecret(spec)
-                .getEncoded();
+                factory.generateSecret(spec)
+                        .getEncoded();
 
 
 
@@ -105,6 +90,150 @@ public class CryptoUtils {
                 "AES"
         );
 
+    }
+
+
+
+
+
+    /*
+        Encrypt Binary Data
+
+        Supports:
+        PDF
+        JPG
+        PNG
+        ZIP
+        EXE
+        DOCX
+     */
+
+
+    public static byte[] encryptBytes(
+            byte[] data,
+            String fileName,
+            char[] password
+    )
+            throws CryptoException {
+
+
+        try {
+
+
+            byte[] salt =
+                    new byte[SALT_LENGTH];
+
+
+            byte[] iv =
+                    new byte[IV_LENGTH];
+
+
+            RANDOM.nextBytes(salt);
+
+            RANDOM.nextBytes(iv);
+
+
+
+            SecretKey key =
+                    generateKey(
+                            password,
+                            salt
+                    );
+
+
+
+            Cipher cipher =
+                    Cipher.getInstance(
+                            "AES/GCM/NoPadding"
+                    );
+
+
+
+            cipher.init(
+                    Cipher.ENCRYPT_MODE,
+                    key,
+                    new GCMParameterSpec(
+                            TAG_LENGTH,
+                            iv
+                    )
+            );
+
+
+
+            byte[] encrypted =
+                    cipher.doFinal(data);
+
+
+
+            byte[] hash =
+                    sha256(data);
+
+
+
+            byte[] nameBytes =
+                    fileName.getBytes(
+                            StandardCharsets.UTF_8
+                    );
+
+
+
+            ByteArrayOutputStream output =
+                    new ByteArrayOutputStream();
+
+
+
+            output.write(MAGIC);
+
+            output.write(VERSION);
+
+
+            writeInt(
+                    output,
+                    nameBytes.length
+            );
+
+
+            output.write(nameBytes);
+
+
+
+            writeLong(
+                    output,
+                    data.length
+            );
+
+
+            writeInt(
+                    output,
+                    hash.length
+            );
+
+
+            output.write(hash);
+
+
+            output.write(salt);
+
+            output.write(iv);
+
+            output.write(encrypted);
+
+
+
+            return output.toByteArray();
+
+
+
+        }
+        catch(Exception e){
+
+
+            throw new CryptoException(
+                    "Encryption failed",
+                    e
+            );
+
+        }
 
     }
 
@@ -113,28 +242,263 @@ public class CryptoUtils {
 
 
 
+    /*
+        Decrypt Binary Data
+     */
+
+
+    public static DecryptedData decryptBytes(
+            byte[] encryptedFile,
+            char[] password
+    )
+            throws CryptoException {
+
+
+
+        try {
+
+
+            ByteBuffer buffer =
+                    ByteBuffer.wrap(
+                            encryptedFile
+                    );
+
+
+
+            byte[] magic =
+                    new byte[4];
+
+
+            buffer.get(magic);
+
+
+
+            if(!Arrays.equals(
+                    magic,
+                    MAGIC
+            )){
+
+
+                throw new CryptoException(
+                        "Invalid encrypted file format"
+                );
+
+            }
+
+
+
+
+            byte version =
+                    buffer.get();
+
+
+
+            if(version != VERSION){
+
+
+                throw new CryptoException(
+                        "Unsupported file version"
+                );
+
+            }
+
+
+
+
+            int nameLength =
+                    buffer.getInt();
+
+
+
+            byte[] nameBytes =
+                    new byte[nameLength];
+
+
+            buffer.get(nameBytes);
+
+
+
+            String fileName =
+                    new String(
+                            nameBytes,
+                            StandardCharsets.UTF_8
+                    );
+
+
+
+
+            long originalSize =
+                    buffer.getLong();
+
+
+
+
+            int hashLength =
+                    buffer.getInt();
+
+
+
+            byte[] storedHash =
+                    new byte[hashLength];
+
+
+
+            buffer.get(storedHash);
+
+
+
+
+            byte[] salt =
+                    new byte[SALT_LENGTH];
+
+
+            buffer.get(salt);
+
+
+
+            byte[] iv =
+                    new byte[IV_LENGTH];
+
+
+            buffer.get(iv);
+
+
+
+
+            byte[] cipherText =
+                    new byte[buffer.remaining()];
+
+
+            buffer.get(cipherText);
+
+
+
+
+            SecretKey key =
+                    generateKey(
+                            password,
+                            salt
+                    );
+
+
+
+            Cipher cipher =
+                    Cipher.getInstance(
+                            "AES/GCM/NoPadding"
+                    );
+
+
+
+            cipher.init(
+                    Cipher.DECRYPT_MODE,
+                    key,
+                    new GCMParameterSpec(
+                            TAG_LENGTH,
+                            iv
+                    )
+            );
+
+
+
+            byte[] decrypted;
+
+
+
+            try {
+
+
+                decrypted =
+                        cipher.doFinal(
+                                cipherText
+                        );
+
+
+            }
+            catch(Exception e){
+
+
+                throw new CryptoException(
+                        "Authentication failed: Wrong password"
+                );
+
+            }
+
+
+
+
+            byte[] calculatedHash =
+                    sha256(
+                            decrypted
+                    );
+
+
+
+            if(!Arrays.equals(
+                    storedHash,
+                    calculatedHash
+            )){
+
+
+                throw new CryptoException(
+                        "Integrity verification failed"
+                );
+
+            }
+
+
+
+
+            return new DecryptedData(
+                    fileName,
+                    decrypted,
+                    originalSize
+            );
+
+
+
+        }
+        catch(CryptoException e){
+
+            throw e;
+
+        }
+        catch(Exception e){
+
+
+            throw new CryptoException(
+                    "Decryption failed",
+                    e
+            );
+
+        }
+
+    }
+
+
+
+
+
 
     /*
-     * Encrypt Text
+        Text Encryption Wrapper
      */
 
 
     public static String encrypt(
-            String plainText,
+            String text,
             char[] password
     )
-            throws GeneralSecurityException {
-
+            throws CryptoException {
 
 
         byte[] encrypted =
                 encryptBytes(
-                        plainText.getBytes(
+                        text.getBytes(
                                 StandardCharsets.UTF_8
                         ),
+                        "text.txt",
                         password
                 );
-
 
 
         return Base64
@@ -143,7 +507,6 @@ public class CryptoUtils {
                         encrypted
                 );
 
-
     }
 
 
@@ -151,9 +514,8 @@ public class CryptoUtils {
 
 
 
-
     /*
-     * Decrypt Text
+        Text Decryption Wrapper
      */
 
 
@@ -161,303 +523,173 @@ public class CryptoUtils {
             String encryptedText,
             char[] password
     )
-            throws GeneralSecurityException {
+            throws CryptoException {
+
+
+        try {
+
+
+            byte[] data =
+                    Base64
+                    .getDecoder()
+                    .decode(
+                            encryptedText
+                    );
 
 
 
-        byte[] decrypted =
-                decryptBytes(
-                        Base64
-                        .getDecoder()
-                        .decode(
-                                encryptedText
-                        ),
-                        password
-                );
+            DecryptedData result =
+                    decryptBytes(
+                            data,
+                            password
+                    );
 
 
 
-        return new String(
-                decrypted,
-                StandardCharsets.UTF_8
-        );
+            return new String(
+                    result.getData(),
+                    StandardCharsets.UTF_8
+            );
 
+
+        }
+        catch(Exception e){
+
+
+            throw new CryptoException(
+                    "Authentication failed: Wrong password or corrupted data",
+                    e
+            );
+
+        }
 
     }
 
 
 
 
+
+
+    private static byte[] sha256(
+            byte[] data
+    )
+            throws Exception {
+
+
+        MessageDigest digest =
+                MessageDigest.getInstance(
+                        "SHA-256"
+                );
+
+
+        return digest.digest(
+                data
+        );
+
+    }
+
+
+
+
+
+    private static void writeInt(
+            ByteArrayOutputStream out,
+            int value
+    ){
+
+
+        out.write(
+                ByteBuffer.allocate(4)
+                        .putInt(value)
+                        .array(),
+                0,
+                4
+        );
+
+    }
+
+
+
+
+
+
+    private static void writeLong(
+            ByteArrayOutputStream out,
+            long value
+    ){
+
+
+        out.write(
+                ByteBuffer.allocate(8)
+                        .putLong(value)
+                        .array(),
+                0,
+                8
+        );
+
+    }
 
 
 
 
 
     /*
-     * Encrypt Binary Data
-     *
-     * Used for:
-     *
-     * PDF
-     * JPG
-     * PNG
-     * ZIP
-     * DOCX
-     * EXE
-     *
+        Decrypted Container
      */
 
 
-    public static byte[] encryptBytes(
-            byte[] data,
-            char[] password
-    )
-            throws GeneralSecurityException {
+    public static class DecryptedData {
 
 
+        private final String fileName;
 
-        byte[] salt =
-                new byte[SALT_LENGTH];
+        private final byte[] data;
 
+        private final long originalSize;
 
-        byte[] iv =
-                new byte[IV_LENGTH];
 
 
+        public DecryptedData(
+                String fileName,
+                byte[] data,
+                long originalSize
+        ){
 
-        RANDOM.nextBytes(salt);
+            this.fileName = fileName;
 
-        RANDOM.nextBytes(iv);
+            this.data = data;
 
-
-
-
-        SecretKey key =
-                generateKey(
-                        password,
-                        salt
-                );
-
-
-
-
-        Cipher cipher =
-                Cipher.getInstance(
-                        "AES/GCM/NoPadding"
-                );
-
-
-
-
-        cipher.init(
-                Cipher.ENCRYPT_MODE,
-                key,
-                new GCMParameterSpec(
-                        TAG_LENGTH,
-                        iv
-                )
-        );
-
-
-
-        byte[] encrypted =
-                cipher.doFinal(
-                        data
-                );
-
-
-
-
-
-
-        ByteBuffer buffer =
-                ByteBuffer.allocate(
-                        MAGIC.length
-                        +
-                        1
-                        +
-                        salt.length
-                        +
-                        iv.length
-                        +
-                        encrypted.length
-                );
-
-
-
-        buffer.put(MAGIC);
-
-        buffer.put(VERSION);
-
-        buffer.put(salt);
-
-        buffer.put(iv);
-
-        buffer.put(encrypted);
-
-
-
-        return buffer.array();
-
-
-    }
-
-
-
-
-
-
-
-
-
-    /*
-     * Decrypt Binary Data
-     */
-
-
-    public static byte[] decryptBytes(
-            byte[] encryptedData,
-            char[] password
-    )
-            throws GeneralSecurityException {
-
-
-
-        ByteBuffer buffer =
-                ByteBuffer.wrap(
-                        encryptedData
-                );
-
-
-
-        byte[] magic =
-                new byte[4];
-
-
-
-        buffer.get(magic);
-
-
-
-
-        if(
-                magic[0] != 'E'
-                ||
-                magic[1] != 'N'
-                ||
-                magic[2] != 'C'
-                ||
-                magic[3] != 'R'
-        )
-        {
-
-            throw new GeneralSecurityException(
-                    "Invalid encrypted file format"
-            );
+            this.originalSize = originalSize;
 
         }
 
 
 
 
+        public String getFileName(){
 
-        byte version =
-                buffer.get();
-
-
-
-        if(version != VERSION)
-        {
-
-            throw new GeneralSecurityException(
-                    "Unsupported encryption version"
-            );
+            return fileName;
 
         }
 
 
 
+        public byte[] getData(){
+
+            return data;
+
+        }
 
 
 
-        byte[] salt =
-                new byte[SALT_LENGTH];
+        public long getOriginalSize(){
 
+            return originalSize;
 
-        buffer.get(salt);
-
-
-
-
-
-        byte[] iv =
-                new byte[IV_LENGTH];
-
-
-        buffer.get(iv);
-
-
-
-
-
-
-        byte[] cipherText =
-                new byte[
-                        buffer.remaining()
-                ];
-
-
-
-        buffer.get(cipherText);
-
-
-
-
-
-
-
-        SecretKey key =
-                generateKey(
-                        password,
-                        salt
-                );
-
-
-
-
-
-
-
-        Cipher cipher =
-                Cipher.getInstance(
-                        "AES/GCM/NoPadding"
-                );
-
-
-
-
-
-        cipher.init(
-                Cipher.DECRYPT_MODE,
-                key,
-                new GCMParameterSpec(
-                        TAG_LENGTH,
-                        iv
-                )
-        );
-
-
-
-
-
-        return cipher.doFinal(
-                cipherText
-        );
+        }
 
 
     }
-
-
 
 
 }

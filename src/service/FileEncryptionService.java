@@ -1,6 +1,7 @@
 package service;
 
 
+import crypto.CryptoException;
 import crypto.CryptoUtils;
 
 
@@ -9,22 +10,26 @@ import java.nio.file.Path;
 
 
 
+/*
+ * FileEncryptionService
+ *
+ * Responsibilities:
+ *
+ * - Read binary files
+ * - Encrypt files using CryptoUtils
+ * - Save encrypted container files
+ * - Decrypt encrypted files
+ * - Restore original files
+ *
+ */
+
+
 public class FileEncryptionService {
 
 
 
     /*
-     * Encrypt Any File
-     *
-     * Supports:
-     *
-     * PDF
-     * JPG
-     * PNG
-     * ZIP
-     * DOCX
-     * EXE
-     *
+     * Encrypt File
      */
 
 
@@ -37,30 +42,43 @@ public class FileEncryptionService {
 
 
 
-        validateFile(inputFile);
+        if(!Files.exists(inputFile)){
+
+
+            throw new Exception(
+                    "Input file does not exist"
+            );
+
+
+        }
 
 
 
-        byte[] fileBytes =
+
+        byte[] data =
                 Files.readAllBytes(
                         inputFile
                 );
 
 
 
-        byte[] encryptedBytes =
+
+
+        byte[] encrypted =
                 CryptoUtils.encryptBytes(
-                        fileBytes,
+                        data,
+                        inputFile.getFileName().toString(),
                         password
                 );
 
 
 
+
+
         Files.write(
                 outputFile,
-                encryptedBytes
+                encrypted
         );
-
 
 
     }
@@ -71,13 +89,15 @@ public class FileEncryptionService {
 
 
 
+
+
     /*
-     * Decrypt Any File
+     * Decrypt File
      */
 
 
     public static void decryptFile(
-            Path inputFile,
+            Path encryptedFile,
             Path outputFile,
             char[] password
     )
@@ -85,84 +105,50 @@ public class FileEncryptionService {
 
 
 
-        validateFile(inputFile);
+        if(!Files.exists(encryptedFile)){
+
+
+            throw new Exception(
+                    "Encrypted file does not exist"
+            );
+
+
+        }
 
 
 
 
-        byte[] encryptedBytes =
+
+
+        byte[] encryptedData =
                 Files.readAllBytes(
-                        inputFile
+                        encryptedFile
                 );
 
 
 
-        byte[] decryptedBytes =
+
+
+
+
+
+        CryptoUtils.DecryptedData decrypted =
                 CryptoUtils.decryptBytes(
-                        encryptedBytes,
+                        encryptedData,
                         password
                 );
 
 
 
+
+
+
+
         Files.write(
                 outputFile,
-                decryptedBytes
+                decrypted.getData()
         );
 
-
-
-    }
-
-
-
-
-
-
-
-
-    /*
-     * Validate File
-     */
-
-
-    private static void validateFile(
-            Path file
-    )
-            throws Exception {
-
-
-
-        if(file == null)
-        {
-
-            throw new Exception(
-                    "No file selected"
-            );
-
-        }
-
-
-
-        if(!Files.exists(file))
-        {
-
-            throw new Exception(
-                    "File does not exist"
-            );
-
-        }
-
-
-
-        if(!Files.isRegularFile(file))
-        {
-
-            throw new Exception(
-                    "Invalid file"
-            );
-
-        }
 
 
     }
