@@ -14,7 +14,17 @@ public class FileEncryptionService {
 
 
     /*
-     * Encrypt File
+     * Encrypt Any File
+     *
+     * Supports:
+     *
+     * PDF
+     * JPG
+     * PNG
+     * ZIP
+     * DOCX
+     * EXE
+     *
      */
 
 
@@ -31,24 +41,24 @@ public class FileEncryptionService {
 
 
 
-        byte[] fileData =
+        byte[] fileBytes =
                 Files.readAllBytes(
                         inputFile
                 );
 
 
 
-        String encrypted =
-                CryptoUtils.encrypt(
-                        new String(fileData),
+        byte[] encryptedBytes =
+                CryptoUtils.encryptBytes(
+                        fileBytes,
                         password
                 );
 
 
 
-        Files.writeString(
+        Files.write(
                 outputFile,
-                encrypted
+                encryptedBytes
         );
 
 
@@ -59,8 +69,10 @@ public class FileEncryptionService {
 
 
 
+
+
     /*
-     * Decrypt File
+     * Decrypt Any File
      */
 
 
@@ -77,24 +89,25 @@ public class FileEncryptionService {
 
 
 
-        String encrypted =
-                Files.readString(
+
+        byte[] encryptedBytes =
+                Files.readAllBytes(
                         inputFile
                 );
 
 
 
-        String decrypted =
-                CryptoUtils.decrypt(
-                        encrypted,
+        byte[] decryptedBytes =
+                CryptoUtils.decryptBytes(
+                        encryptedBytes,
                         password
                 );
 
 
 
-        Files.writeString(
+        Files.write(
                 outputFile,
-                decrypted
+                decryptedBytes
         );
 
 
@@ -107,8 +120,9 @@ public class FileEncryptionService {
 
 
 
+
     /*
-     * File Validation
+     * Validate File
      */
 
 
@@ -119,31 +133,40 @@ public class FileEncryptionService {
 
 
 
-        if(file == null){
-
+        if(file == null)
+        {
 
             throw new Exception(
-                    "File not selected"
+                    "No file selected"
             );
-
 
         }
 
 
 
-
-        if(!Files.exists(file)){
-
+        if(!Files.exists(file))
+        {
 
             throw new Exception(
                     "File does not exist"
             );
 
+        }
+
+
+
+        if(!Files.isRegularFile(file))
+        {
+
+            throw new Exception(
+                    "Invalid file"
+            );
 
         }
 
 
     }
+
 
 
 }

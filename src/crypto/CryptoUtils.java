@@ -4,6 +4,7 @@ package crypto;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
+
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -20,6 +21,7 @@ import java.util.Base64;
 
 
 
+
 public class CryptoUtils {
 
 
@@ -31,15 +33,11 @@ public class CryptoUtils {
 
     private static final int SALT_LENGTH = 16;
 
-
     private static final int IV_LENGTH = 12;
-
 
     private static final int KEY_LENGTH = 256;
 
-
     private static final int ITERATIONS = 120000;
-
 
     private static final int TAG_LENGTH = 128;
 
@@ -66,7 +64,7 @@ public class CryptoUtils {
 
 
     /*
-     * Generate AES key from password
+     * Generate AES Key From Password
      */
 
 
@@ -114,8 +112,10 @@ public class CryptoUtils {
 
 
 
+
+
     /*
-     * Encrypt text
+     * Encrypt Text
      */
 
 
@@ -127,10 +127,92 @@ public class CryptoUtils {
 
 
 
-        byte[] plaintextBytes =
-                plainText.getBytes(
-                        StandardCharsets.UTF_8
+        byte[] encrypted =
+                encryptBytes(
+                        plainText.getBytes(
+                                StandardCharsets.UTF_8
+                        ),
+                        password
                 );
+
+
+
+        return Base64
+                .getEncoder()
+                .encodeToString(
+                        encrypted
+                );
+
+
+    }
+
+
+
+
+
+
+
+    /*
+     * Decrypt Text
+     */
+
+
+    public static String decrypt(
+            String encryptedText,
+            char[] password
+    )
+            throws GeneralSecurityException {
+
+
+
+        byte[] decrypted =
+                decryptBytes(
+                        Base64
+                        .getDecoder()
+                        .decode(
+                                encryptedText
+                        ),
+                        password
+                );
+
+
+
+        return new String(
+                decrypted,
+                StandardCharsets.UTF_8
+        );
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /*
+     * Encrypt Binary Data
+     *
+     * Used for:
+     *
+     * PDF
+     * JPG
+     * PNG
+     * ZIP
+     * DOCX
+     * EXE
+     *
+     */
+
+
+    public static byte[] encryptBytes(
+            byte[] data,
+            char[] password
+    )
+            throws GeneralSecurityException {
 
 
 
@@ -149,11 +231,13 @@ public class CryptoUtils {
 
 
 
+
         SecretKey key =
                 generateKey(
                         password,
                         salt
                 );
+
 
 
 
@@ -164,26 +248,25 @@ public class CryptoUtils {
 
 
 
-        GCMParameterSpec spec =
-                new GCMParameterSpec(
-                        TAG_LENGTH,
-                        iv
-                );
-
-
 
         cipher.init(
                 Cipher.ENCRYPT_MODE,
                 key,
-                spec
+                new GCMParameterSpec(
+                        TAG_LENGTH,
+                        iv
+                )
         );
 
 
 
         byte[] encrypted =
                 cipher.doFinal(
-                        plaintextBytes
+                        data
                 );
+
+
+
 
 
 
@@ -214,11 +297,8 @@ public class CryptoUtils {
 
 
 
-        return Base64
-                .getEncoder()
-                .encodeToString(
-                        buffer.array()
-                );
+        return buffer.array();
+
 
     }
 
@@ -227,31 +307,25 @@ public class CryptoUtils {
 
 
 
+
+
+
     /*
-     * Decrypt text
+     * Decrypt Binary Data
      */
 
 
-    public static String decrypt(
-            String encryptedText,
+    public static byte[] decryptBytes(
+            byte[] encryptedData,
             char[] password
     )
             throws GeneralSecurityException {
 
 
 
-        byte[] data =
-                Base64
-                .getDecoder()
-                .decode(
-                        encryptedText
-                );
-
-
-
         ByteBuffer buffer =
                 ByteBuffer.wrap(
-                        data
+                        encryptedData
                 );
 
 
@@ -260,29 +334,49 @@ public class CryptoUtils {
                 new byte[4];
 
 
+
         buffer.get(magic);
 
 
 
+
         if(
-            magic[0]!='E'
-            ||
-            magic[1]!='N'
-            ||
-            magic[2]!='C'
-            ||
-            magic[3]!='R'
-        ){
+                magic[0] != 'E'
+                ||
+                magic[1] != 'N'
+                ||
+                magic[2] != 'C'
+                ||
+                magic[3] != 'R'
+        )
+        {
 
             throw new GeneralSecurityException(
-                    "Invalid encrypted data"
+                    "Invalid encrypted file format"
             );
 
         }
 
 
 
-        buffer.get();
+
+
+        byte version =
+                buffer.get();
+
+
+
+        if(version != VERSION)
+        {
+
+            throw new GeneralSecurityException(
+                    "Unsupported encryption version"
+            );
+
+        }
+
+
+
 
 
 
@@ -294,6 +388,8 @@ public class CryptoUtils {
 
 
 
+
+
         byte[] iv =
                 new byte[IV_LENGTH];
 
@@ -302,11 +398,20 @@ public class CryptoUtils {
 
 
 
-        byte[] encrypted =
-                new byte[buffer.remaining()];
 
 
-        buffer.get(encrypted);
+
+        byte[] cipherText =
+                new byte[
+                        buffer.remaining()
+                ];
+
+
+
+        buffer.get(cipherText);
+
+
+
 
 
 
@@ -320,6 +425,9 @@ public class CryptoUtils {
 
 
 
+
+
+
         Cipher cipher =
                 Cipher.getInstance(
                         "AES/GCM/NoPadding"
@@ -327,32 +435,23 @@ public class CryptoUtils {
 
 
 
-        GCMParameterSpec spec =
-                new GCMParameterSpec(
-                        TAG_LENGTH,
-                        iv
-                );
-
 
 
         cipher.init(
                 Cipher.DECRYPT_MODE,
                 key,
-                spec
+                new GCMParameterSpec(
+                        TAG_LENGTH,
+                        iv
+                )
         );
 
 
 
-        byte[] decrypted =
-                cipher.doFinal(
-                        encrypted
-                );
 
 
-
-        return new String(
-                decrypted,
-                StandardCharsets.UTF_8
+        return cipher.doFinal(
+                cipherText
         );
 
 
