@@ -1,12 +1,21 @@
 package main;
 
+
+import gui.EncryptionFrame;
+
+
 public class Main {
+
 
     public static void main(String[] args) {
 
-        System.out.println(
-            "Encryption Decryption Tool Started"
-        );
+
+        EncryptionFrame frame =
+                new EncryptionFrame();
+
+
+        frame.setVisible(true);
+
 
     }
 
