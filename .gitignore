@@ -1,0 +1,17 @@
+# Java compiled files
+*.class
+
+# Build folders
+out/
+bin/
+
+# IDE files
+.idea/
+.vscode/
+
+# Generated encrypted files
+*.enc
+
+# OS files
+.DS_Store
+Thumbs.db
